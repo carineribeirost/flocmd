@@ -1,0 +1,49 @@
+# =============================================================================
+#  DPD force field (Groot & Warren 1997), rho = 3, kT = 1, r_c = 1 (~0.65 nm)
+#  Types: 1 W water | 2 O oil | 3 P hydrophilic backbone | 4 H hydrophobic sticker
+#  a_ij = 25 + 3.27 chi_ij  (rho = 3). Defaults:
+#    W–O 80 (immiscible)       W–P 26 (PAM water-soluble, chi ~ 0.3)
+#    W–H 80 (alkyl/water)      O–P 60 (PAM insoluble in oil)
+#    O–H 25 (alkyl/oil ideal)  P–H 45
+#  Override any value with -var a_XY <value>; see flocmd.theory for chi mapping.
+# =============================================================================
+
+variable a_ww  index 25.0
+variable a_oo  index 25.0
+variable a_pp  index 25.0
+variable a_hh  index 25.0
+variable a_wo  index 80.0
+variable a_wp  index 26.0
+variable a_wh  index 80.0
+variable a_op  index 60.0
+variable a_oh  index 25.0
+variable a_ph  index 45.0
+variable gamma_dpd index 4.5   # dissipative friction
+# Bonds: harmonic E = K (r - r0)^2. The original Groot–Warren spring (K = 2, r0 = 0)
+# lets bonds stretch to ~3 r_c; on a single MPI rank such a bond can silently be
+# computed through the wrong periodic image. K = 25, r0 = 0.7 keeps bonds at
+# ~0.85 +- 0.15 r_c (stable with dt = 0.04: ~16 steps per bond period).
+variable k_bond index 25.0
+variable r_bond index 0.7
+
+pair_style      dpd 1.0 1.0 ${seed}
+pair_coeff      1 1 ${a_ww} ${gamma_dpd}
+pair_coeff      2 2 ${a_oo} ${gamma_dpd}
+pair_coeff      3 3 ${a_pp} ${gamma_dpd}
+pair_coeff      4 4 ${a_hh} ${gamma_dpd}
+pair_coeff      1 2 ${a_wo} ${gamma_dpd}
+pair_coeff      1 3 ${a_wp} ${gamma_dpd}
+pair_coeff      1 4 ${a_wh} ${gamma_dpd}
+pair_coeff      2 3 ${a_op} ${gamma_dpd}
+pair_coeff      2 4 ${a_oh} ${gamma_dpd}
+pair_coeff      3 4 ${a_ph} ${gamma_dpd}
+
+bond_style      harmonic
+bond_coeff      * ${k_bond} ${r_bond}
+# DPD: bonded beads keep their conservative/dissipative/random pair forces
+special_bonds   lj 1.0 1.0 1.0
+
+# ghost cutoff well beyond any bond length, so bonded partners are always found
+comm_modify     vel yes cutoff 2.5
+neighbor        0.6 bin       # 0.3 rebuilds every step for DPD velocities; 0.6 is ~15% faster
+neigh_modify    every 1 delay 0 check yes

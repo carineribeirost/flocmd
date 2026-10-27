@@ -1,0 +1,37 @@
+# Bridging free energy between two colloids.
+#   bare     : no polymer -> must reproduce the analytic WCA + DLVO potential (validation)
+#   pe_out   : one CPAM chain (Phi = 0.75), windows from contact outwards (pulling apart)
+#   pe_in    : same system, windows from far to contact (pushing together) -> hysteresis check
+#   pe2_out  : two chains (Phi = 1.5, overdosed)
+# Run:      flocmd sweep simulations/02_bridging_pmf/sweep_pmf.toml -j 4 --analyze
+# Figures:  flocmd plot pmf runs/pmf
+
+workflow = "pmf"
+preset = "quick"
+output = "runs/pmf"
+
+[params]
+chain_length = 60
+charge_fraction = 0.5
+debye = 2.0
+box_length = 40.0
+
+[[cases]]
+label = "bare"
+n_chains = 0
+
+[[cases]]
+label = "pe_out"
+n_chains = 1
+direction = 1
+
+[[cases]]
+label = "pe_in"
+n_chains = 1
+direction = -1
+colloid_separation = 16.0   # = r_start; with n_windows = 20 and dr = 0.5 this ends at 6.5
+
+[[cases]]
+label = "pe2_out"
+n_chains = 2
+direction = 1

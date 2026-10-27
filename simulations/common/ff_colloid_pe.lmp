@@ -1,0 +1,63 @@
+# =============================================================================
+#  Force field: charged nanocolloids + (poly)electrolyte, implicit solvent
+#  Included by 01_flocculation_kinetics and 02_bridging_pmf.
+# -----------------------------------------------------------------------------
+#  Types: 1 colloid (diameter dc) | 2 neutral monomer | 3 cationic monomer
+#  Units: lj, sigma = monomer diameter ~ 0.71 nm, kT = 1
+#
+#  Excluded volume : lj/expand (WCA), shifted so the colloid core has diameter ~dc
+#  Electrostatics  : screened Coulomb (Debye–Hueckel / Yukawa), implicit salt
+#                    U = lB qi qj exp(-kappa r)/r ;  lB set through `dielectric`
+#                    Charges carry the DLVO factor exp(kappa a)/(1+kappa a), so the
+#                    point-charge Yukawa reproduces linearised PB for finite spheres.
+#  Specific adsorption (optional): eps_ads > 0 turns the neutral-monomer/colloid
+#                    pair into a full LJ well (e.g. amide H-bonding to silica).
+#  Bonds           : FENE (Kremer–Grest), K = 30, R0 = 1.5
+#
+#  Required variables (with defaults set by the calling input):
+#    dc Zc lB debye eps_ads
+# =============================================================================
+
+variable kappa     equal 1.0/${debye}
+variable ac        equal 0.5*${dc}
+variable qc        equal -${Zc}*exp(v_kappa*v_ac)/(1.0+v_kappa*v_ac)
+variable qm        equal exp(0.5*v_kappa)/(1.0+0.5*v_kappa)
+variable dielec    equal 1.0/${lB}
+
+variable rc_wca    equal 2.0^(1.0/6.0)
+variable dlt_cc    equal ${dc}-1.0
+variable dlt_cm    equal 0.5*(${dc}-1.0)
+variable rc_cc_q   equal ${dc}+5.0*${debye}
+variable rc_cm_q   equal 0.5*${dc}+0.5+5.0*${debye}
+variable rc_mm_q   equal 1.0+5.0*${debye}
+
+if "${eps_ads} > 0.0" then &
+  "variable eps_cm equal ${eps_ads}" &
+  "variable rc_cm  equal 2.5" &
+else &
+  "variable eps_cm equal 1.0" &
+  "variable rc_cm  equal ${rc_wca}"
+
+set type 1 charge ${qc}
+set type 3 charge ${qm}
+
+pair_style      hybrid/overlay lj/expand ${rc_wca} coul/debye ${kappa} ${rc_cc_q}
+pair_coeff      * * lj/expand 1.0 1.0 0.0 ${rc_wca}
+pair_coeff      1 1 lj/expand 1.0 1.0 ${dlt_cc} ${rc_wca}
+pair_coeff      1 2 lj/expand ${eps_cm} 1.0 ${dlt_cm} ${rc_cm}
+pair_coeff      1 3 lj/expand 1.0 1.0 ${dlt_cm} ${rc_wca}
+pair_coeff      1 1 coul/debye ${rc_cc_q}
+pair_coeff      1 3 coul/debye ${rc_cm_q}
+pair_coeff      3 3 coul/debye ${rc_mm_q}
+pair_modify     shift yes
+dielectric      ${dielec}
+
+bond_style      fene
+bond_coeff      1 30.0 1.5 1.0 1.0
+special_bonds   fene
+
+# large skin: monomers diffuse fast in implicit solvent (D = 1); 1.5 sigma cuts
+# neighbour-list rebuilds ~4x and is ~1.6x faster than 0.4 sigma for this model
+neighbor        1.5 multi
+neigh_modify    every 1 delay 0 check yes
+comm_modify     mode multi

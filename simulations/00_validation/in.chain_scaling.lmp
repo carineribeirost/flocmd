@@ -1,0 +1,53 @@
+# =============================================================================
+#  Validation B — Flory scaling of a single Kremer–Grest chain in good solvent
+#  Implicit solvent (WCA + FENE, Langevin). Expect Rg ~ N^nu with nu ~ 0.588.
+#  Writes the instantaneous squared radius of gyration to rg.dat.
+#  Analyse a set of N with:  flocmd analyze chain_scaling <sweep_dir>
+# =============================================================================
+
+variable data     index data.lmp
+variable seed     index 2024
+variable dt       index 0.01
+variable n_eq     index 100000
+variable n_run    index 1000000
+variable n_sample index 100
+
+variable n_push   index 10000
+
+units           lj
+atom_style      full
+boundary        p p p
+read_data       ${data}
+
+bond_style      fene
+bond_coeff      1 30.0 1.5 1.0 1.0
+special_bonds   fene
+neighbor        0.4 bin
+neigh_modify    every 1 delay 0 check yes
+comm_modify     cutoff 3.0
+timestep        ${dt}
+
+# soft push-off of random-walk overlaps
+pair_style      soft 1.122462
+pair_coeff      * * 0.0
+variable        Asoft equal ramp(0.0,100.0)
+fix             push all adapt 1 pair soft a * * v_Asoft
+fix             pint all nve/limit 0.05
+fix             lang all langevin 1.0 1.0 1.0 ${seed}
+run             ${n_push}
+unfix           push
+unfix           pint
+
+pair_style      lj/cut 1.122462
+pair_coeff      * * 1.0 1.0
+pair_modify     shift yes
+fix             integ all nve
+compute         rg all gyration
+variable        rg2 equal c_rg^2
+thermo_style    custom step temp pe ebond c_rg
+thermo          $(v_n_run/20:%.0f)
+
+run             ${n_eq}
+reset_timestep  0
+fix             out all ave/time ${n_sample} 1 ${n_sample} v_rg2 file rg.dat
+run             ${n_run}

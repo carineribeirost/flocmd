@@ -1,0 +1,42 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # The MPICH runtime from PyPI uses UCX. Some runners expose an Azure RDMA NIC
+      # (mana_0) that UCX cannot open, so MPI_Init aborts before LAMMPS starts.
+      # The tests run on a single MPI rank: shared memory + TCP is all they need.
+      UCX_TLS: self,sm,tcp
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install flocmd + LAMMPS (PyPI wheel) + MPICH runtime
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,lammps]" mpich
+      - name: LAMMPS version
+        run: |
+          cat /etc/os-release | grep PRETTY_NAME
+          if ! echo "info config" | lmp -log none > lmp_info.txt 2>&1; then
+            tail -n 20 lmp_info.txt | sed 's/^/::error title=lmp::/'
+            exit 1
+          fi
+          head -n 5 lmp_info.txt
+      - name: Unit tests and end-to-end LAMMPS smoke tests
+        run: |
+          set -o pipefail
+          pytest -v -rfE 2>&1 | tee pytest.log || {
+            grep -E "^(FAILED|ERROR) |^E  " pytest.log | head -n 30 | sed 's/^/::error title=pytest::/'
+            exit 1
+          }

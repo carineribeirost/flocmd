@@ -1,0 +1,89 @@
+# =============================================================================
+#  Module 1 — Flocculation kinetics of charged nanocolloids by a cationic
+#             polyelectrolyte (CPAM-like), coarse-grained Langevin dynamics.
+# -----------------------------------------------------------------------------
+#  Protocol (jar-test analogue)
+#    0. soft push-off of overlapping beads (colloids fixed)
+#    1. "rapid mix": chains adsorb onto the still-dispersed colloids (colloids fixed)
+#    2. "slow mix" : everything moves; colloids collide, bridge and flocculate.
+#       Time origin of the kinetics = start of stage 2.
+#
+#  Outputs (stage 2)
+#    clusters.dat   number of colloid clusters and mean cluster size vs time
+#    rdf_cc.dat     colloid–colloid g(r), block-averaged every n_rdf steps
+#    traj.lammpstrj full trajectory (post-processed by `flocmd analyze flocculation`)
+#
+#  Build the data file with:  flocmd build flocculation -o <dir> [--set key=value ...]
+#  or run a full sweep with:  flocmd sweep simulations/01_flocculation_kinetics/sweep_quick.toml
+# =============================================================================
+
+variable data      index data.lmp
+variable common    index ../common
+variable dc        index 6.0        # colloid diameter (sigma)
+variable Zc        index 20.0       # bare colloid charge |Z| (e)
+variable lB        index 1.0        # Bjerrum length (sigma); 1 sigma ~ 0.71 nm -> water at 25 C
+variable debye     index 2.0        # Debye length (sigma); 2 sigma ~ 1.4 nm ~ 45 mM 1:1 salt
+variable eps_ads   index 0.0        # non-electrostatic monomer–colloid attraction (kT)
+variable dt        index 0.01
+variable seed      index 12345
+variable n_push    index 20000
+variable n_adsorb  index 50000
+variable n_run     index 1000000
+variable n_thermo  index 5000
+variable n_dump    index 20000
+variable n_rdf     index 100000
+variable gap_clus  index 2.0        # surface gap (sigma) counted as a floc contact
+
+units           lj
+atom_style      full
+boundary        p p p
+read_data       ${data}
+
+group           colloids type 1
+group           polymer  type 2 3
+variable        n_col equal count(colloids)
+variable        n_pol equal count(polymer)
+timestep        ${dt}
+
+# ---- stage 0: soft push-off -------------------------------------------------
+if "${n_pol} > 0" then "include ${common}/pushoff_colloid_pe.lmp"
+
+# ---- production force field -------------------------------------------------
+include         ${common}/ff_colloid_pe.lmp
+
+# ---- stage 1: rapid mix (colloids fixed) ------------------------------------
+compute         tpol polymer temp
+thermo_style    custom step c_tpol pe evdwl ecoul ebond
+thermo          ${n_thermo}
+if "${n_pol} > 0" then &
+  "fix integ polymer nve" &
+  "fix lang polymer langevin 1.0 1.0 1.0 ${seed}" &
+  "run ${n_adsorb}" &
+  "unfix integ" &
+  "unfix lang"
+
+# ---- stage 2: slow mix / flocculation ---------------------------------------
+reset_timestep  0
+# Langevin friction gamma = m/(damp*ratio); ratio = dc^2 gives gamma_c = dc*gamma_m (Stokes)
+variable        scale_c equal ${dc}*${dc}
+fix             integ all nve
+fix             lang all langevin 1.0 1.0 1.0 ${seed} scale 1 ${scale_c}
+
+variable        r_clus equal ${dc}+${gap_clus}
+compute         clus colloids cluster/atom ${r_clus}
+compute         cchunk colloids chunk/atom c_clus nchunk every compress yes
+variable        nclus equal c_cchunk
+variable        smean equal v_n_col/v_nclus
+fix             clog all ave/time ${n_thermo} 1 ${n_thermo} v_nclus v_smean file clusters.dat
+
+compute         rdf all rdf 120 1 1
+fix             rdf all ave/time 1000 $(v_n_rdf/1000:%.0f) ${n_rdf} c_rdf[*] file rdf_cc.dat mode vector
+
+dump            traj all custom ${n_dump} traj.lammpstrj id mol type x y z ix iy iz
+dump_modify     traj sort id
+
+thermo_style    custom step time temp c_tpol pe ecoul v_nclus v_smean
+thermo          ${n_thermo}
+run             ${n_run}
+
+write_data      final.data nocoeff

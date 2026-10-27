@@ -1,0 +1,21 @@
+# Dose response: where is the optimal dose, and does overdosing restabilise the dispersion?
+# Run:      flocmd sweep simulations/01_flocculation_kinetics/sweep_dose.toml -j 8 --analyze
+# Figures:  flocmd plot flocculation runs/flocculation_dose
+# Cost (preset quick, 1 core per run): ~5–30 min per run (grows with dose), 28 runs.
+# dose = 0 is the no-flocculant control (identical for both charge fractions -> 4 control seeds).
+
+workflow = "flocculation"
+preset = "quick"
+output = "runs/flocculation_dose"
+
+[params]
+colloid_diameter = 6.0
+colloid_charge = 20.0
+volume_fraction = 0.05
+chain_length = 60
+debye = 2.0          # sigma (~1.4 nm, ~45 mM 1:1 salt)
+
+[grid]
+charge_fraction = [0.25, 1.0]   # low vs high charge-density CPAM
+dose = [0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0]
+seed = [1, 2]

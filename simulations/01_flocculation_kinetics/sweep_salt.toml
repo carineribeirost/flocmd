@@ -1,0 +1,17 @@
+# Salinity: how does screening (produced water is brine!) shift the optimal dose
+# and the balance between charge-patch and bridging mechanisms?
+# Run:      flocmd sweep simulations/01_flocculation_kinetics/sweep_salt.toml -j 8 --analyze
+# Figures:  flocmd plot flocculation runs/flocculation_salt
+
+workflow = "flocculation"
+preset = "quick"
+output = "runs/flocculation_salt"
+
+[params]
+chain_length = 60
+charge_fraction = 0.5
+
+[grid]
+debye = [1.0, 2.0, 3.0]          # ~185, ~46, ~20 mM 1:1 salt (sigma = 0.71 nm)
+dose = [0.5, 1.0, 2.0]
+seed = [1, 2]

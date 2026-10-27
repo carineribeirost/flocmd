@@ -1,0 +1,29 @@
+# =============================================================================
+#  Soft push-off for the colloid + polyelectrolyte model.
+#  The builder grows random-walk chains that avoid colloid cores but may overlap
+#  each other; a ramped cosine potential removes those overlaps before the
+#  (singular) WCA/FENE production force field is switched on. Colloids stay fixed.
+#  Requires: groups `polymer`, variables dc, seed, n_push.
+# =============================================================================
+
+variable rc_soft_cm equal 0.5*${dc}+0.5
+
+pair_style      soft 1.122462
+pair_coeff      * * 0.0
+pair_coeff      1 1 0.0 ${dc}
+pair_coeff      1 2*3 0.0 ${rc_soft_cm}
+
+bond_style      fene
+bond_coeff      1 30.0 1.5 1.0 1.0
+special_bonds   fene
+
+variable        Asoft equal ramp(0.0,100.0)
+fix             push all adapt 1 pair soft a * * v_Asoft
+fix             pint polymer nve/limit 0.05
+fix             plang polymer langevin 1.0 1.0 1.0 ${seed}
+thermo_style    custom step temp pe ebond
+thermo          $(v_n_push/10:%.0f)
+run             ${n_push}
+unfix           push
+unfix           pint
+unfix           plang

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flocmd"
+version = "0.1.0"
+description = "Multiscale LAMMPS workflows for polymeric flocculants: bridging flocculation, bridging free energies and oil/water interfaces"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["molecular dynamics", "LAMMPS", "flocculation", "polyelectrolyte", "DPD", "colloids", "produced water"]
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "matplotlib>=3.7",
+  "tomli>=2.0; python_version<'3.11'",
+]
+
+[project.optional-dependencies]
+lammps = ["lammps>=2024.8.29"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+flocmd = "flocmd.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["lammps: needs a LAMMPS executable (skipped otherwise)"]

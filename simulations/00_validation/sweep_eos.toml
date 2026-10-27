@@ -1,0 +1,10 @@
+# DPD equation of state at three densities (each run loops over a = 15, 25, 40, 60).
+# Run:      flocmd sweep simulations/00_validation/sweep_eos.toml -j 3 --analyze
+# Figure:   flocmd plot eos runs/validation_eos
+
+workflow = "eos"
+preset = "quick"
+output = "runs/validation_eos"
+
+[grid]
+rho = [3.0, 4.0, 5.0]

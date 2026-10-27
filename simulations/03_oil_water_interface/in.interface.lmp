@@ -1,0 +1,75 @@
+# =============================================================================
+#  Module 3 — Flocculant at the oil/water interface (DPD, multiphase)
+# -----------------------------------------------------------------------------
+#  Periodic water | oil | water slab (normal along z, two interfaces).
+#  Compares PAM-like homopolymers with hydrophobically modified PAM (HM-PAM):
+#  random, blocky, telechelic and diblock sticker distributions.
+#
+#  Outputs
+#    ift.dat            interfacial tension gamma(t) = Lz/2 [Pzz - (Pxx+Pyy)/2]
+#                       (two interfaces) + pressure-tensor diagonal
+#    prof_<type>.dat    number-density profiles along z (water, oil, backbone, sticker)
+#    polymer.lammpstrj  unwrapped polymer coordinates (adsorption, Rg_par / Rg_perp)
+#    movie.lammpstrj    oil + polymer snapshots when movie = 1 (for `flocmd movie`)
+#  Analyse with:  flocmd analyze interface <run_dir>
+# =============================================================================
+
+variable data      index data.lmp
+variable common    index ../common
+variable seed      index 12345
+variable dt        index 0.04
+variable n_eq      index 25000
+variable n_run     index 100000
+variable n_thermo  index 2000
+variable n_ift     index 100       # gamma is averaged over blocks of n_ift steps
+variable n_prof    index 25000     # profile block length (steps)
+variable n_dump    index 2500
+variable movie     index 0
+variable n_movie   index 500
+variable bin       index 0.5
+
+units           lj
+atom_style      full
+boundary        p p p
+read_data       ${data}
+include         ${common}/ff_dpd.lmp
+
+group           water    type 1
+group           oil      type 2
+group           backbone type 3
+group           sticker  type 4
+group           polymer  type 3 4
+timestep        ${dt}
+
+fix             integ all nve
+# keep the oil slab centred so that z-profiles are not smeared by slab diffusion
+fix             recentre oil recenter NULL NULL INIT shift all
+
+compute         ptens all pressure thermo_temp
+variable        ift equal 0.5*lz*(c_ptens[3]-0.5*(c_ptens[1]+c_ptens[2]))
+thermo_style    custom step temp press pe v_ift
+thermo          ${n_thermo}
+
+# ---- equilibration (adsorption, interface relaxation) -----------------------
+# For a "migration" movie start the chains in bulk water (polymer_start = water)
+# and use a short n_eq: the movie dump covers the production stage.
+run             ${n_eq}
+
+# ---- production ---------------------------------------------------------------
+reset_timestep  0
+if "${movie} > 0" then &
+  "dump movie all custom ${n_movie} movie.lammpstrj id mol type x y z" &
+  "dump_modify movie sort id thresh type != 1"
+fix             iftavg all ave/time 10 $(v_n_ift/10:%.0f) ${n_ift} v_ift c_ptens[1] c_ptens[2] c_ptens[3] file ift.dat
+
+compute         zbins all chunk/atom bin/1d z lower ${bin} units box
+fix             pw water    ave/chunk 100 $(v_n_prof/100:%.0f) ${n_prof} zbins density/number file prof_water.dat
+fix             po oil      ave/chunk 100 $(v_n_prof/100:%.0f) ${n_prof} zbins density/number file prof_oil.dat
+fix             pp backbone ave/chunk 100 $(v_n_prof/100:%.0f) ${n_prof} zbins density/number file prof_backbone.dat
+fix             ph sticker  ave/chunk 100 $(v_n_prof/100:%.0f) ${n_prof} zbins density/number file prof_sticker.dat
+
+dump            pdump polymer custom ${n_dump} polymer.lammpstrj id mol type xu yu zu
+dump_modify     pdump sort id
+
+run             ${n_run}
+write_data      final.data nocoeff

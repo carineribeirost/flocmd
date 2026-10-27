@@ -1,0 +1,48 @@
+# =============================================================================
+#  Validation A — DPD equation of state (Groot & Warren 1997)
+#  For rho > 2:  p = rho kT + alpha a rho^2,  alpha ~ 0.101
+#  Loops over the repulsion parameters in `a_list` at fixed density `rho` and
+#  appends  "a rho <p> std(p) <T>"  to eos.dat.  Analyse: flocmd analyze eos <dir>
+#
+#  Note: at rho = 3 we measure alpha ~ 0.092 (independent of dt, and identical
+#  when only the conservative virial is used), i.e. the classic alpha = 0.101 fit
+#  overestimates p by ~8% at this density. The test therefore checks the scaling
+#  (alpha independent of a) and reports alpha; see docs/science.md.
+# =============================================================================
+
+variable rho     index 3.0
+variable L       index 10.0
+variable seed    index 4928
+variable n_eq    index 2000
+variable n_run   index 20000
+variable a_list  index 15.0 25.0 40.0 60.0
+
+print "# a rho p_mean p_std T_mean" file eos.dat screen no
+
+label loop_a
+clear
+units           lj
+atom_style      atomic
+comm_modify     vel yes
+region          box block 0 ${L} 0 ${L} 0 ${L}
+create_box      1 box
+create_atoms    1 random $(round(v_rho*v_L^3)) ${seed} NULL
+mass            1 1.0
+pair_style      dpd 1.0 1.0 ${seed}
+pair_coeff      1 1 ${a_list} 4.5
+velocity        all create 1.0 ${seed} dist gaussian
+timestep        0.04
+fix             integ all nve
+thermo          1000
+run             ${n_eq}
+
+reset_timestep  0
+variable        p equal press
+variable        p2 equal press*press
+variable        t equal temp
+fix             pav all ave/time 10 $(v_n_run/10:%.0f) ${n_run} v_p v_p2 v_t
+run             ${n_run}
+print           "${a_list} ${rho} $(f_pav[1]:%.5f) $(sqrt(f_pav[2]-f_pav[1]^2):%.5f) $(f_pav[3]:%.5f)" append eos.dat screen no
+
+next            a_list
+jump            SELF loop_a

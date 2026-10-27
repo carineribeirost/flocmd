@@ -1,0 +1,16 @@
+# simulation output (regenerate with flocmd sweep)
+runs/
+*.lammpstrj
+log.lammps
+log.cite
+screen.txt
+restart.*
+final.data
+
+# python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+.venv/

@@ -1,0 +1,33 @@
+# Single Kremer–Grest chain in good solvent: Rg ~ N^nu, nu = 0.588.
+# Short chains show corrections to scaling (local exponent > 0.588), so the fit
+# uses N >= 32 and the run length grows with the Rouse time (~N^2.2).
+# Run:      flocmd sweep simulations/00_validation/sweep_chain_scaling.toml -j 8 --analyze
+# Figure:   flocmd plot chain_scaling runs/validation_chain
+
+workflow = "chain_scaling"
+preset = "quick"
+output = "runs/validation_chain"
+
+[[cases]]
+chain_length = 16
+n_run = 2000000
+
+[[cases]]
+chain_length = 32
+n_run = 2000000
+
+[[cases]]
+chain_length = 64
+n_run = 4000000
+
+[[cases]]
+chain_length = 128
+n_run = 10000000
+
+[[cases]]
+chain_length = 256          # Rouse time ~7.5e5 steps: 6e6 steps ~ 8 relaxation times per seed
+n_eq = 500000
+n_run = 6000000
+
+[grid]
+seed = [1, 2, 3]

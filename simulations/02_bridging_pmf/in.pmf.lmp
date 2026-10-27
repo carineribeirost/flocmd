@@ -1,0 +1,91 @@
+# =============================================================================
+#  Module 2 — Potential of mean force between two charged colloids mediated by
+#             adsorbed polyelectrolyte (bridging attraction), umbrella sampling.
+# -----------------------------------------------------------------------------
+#  The colloid–colloid centre-of-mass distance r is restrained by a harmonic
+#  bias  U_w(r) = K/2 (r - r0_w)^2  (fix spring couple). Windows are visited
+#  sequentially, each starting from the final state of the previous one, so the
+#  run acts as a slow steered pull followed by equilibrium sampling.
+#  Run once with direction = +1 (pull apart) and once with -1 (push together) to
+#  check for hysteresis — bridged states can be long-lived.
+#
+#  Outputs
+#    windows.txt      one line per window: index, r0, K
+#    window_<w>.dat   time series of r in window w (input for WHAM)
+#  Analyse with:  flocmd analyze pmf <run_dir>
+#
+#  Validation: with n_chains = 0 the WHAM PMF must reproduce the bare
+#  WCA + DLVO pair potential (flocmd.theory.colloid_pair_potential).
+# =============================================================================
+
+variable data       index data.lmp
+variable common     index ../common
+variable dc         index 6.0
+variable Zc         index 20.0
+variable lB         index 1.0
+variable debye      index 2.0
+variable eps_ads    index 0.0
+variable dt         index 0.01
+variable seed       index 12345
+variable n_push     index 20000
+variable n_adsorb   index 100000
+variable r_start    index 6.5      # first window centre (builder places colloids here)
+variable dr         index 0.5      # window spacing
+variable n_windows  index 24
+variable direction  index 1        # +1: windows r_start, r_start+dr, ... ; -1: decreasing
+variable K_us       index 10.0     # bias stiffness (kT/sigma^2)
+variable n_win_eq   index 20000
+variable n_win_prod index 200000
+variable n_sample   index 20
+variable n_thermo   index 10000
+
+units           lj
+atom_style      full
+boundary        p p p
+read_data       ${data}
+
+group           colloids type 1
+group           polymer  type 2 3
+group           c1 id 1
+group           c2 id 2
+variable        n_pol equal count(polymer)
+timestep        ${dt}
+
+if "${n_pol} > 0" then "include ${common}/pushoff_colloid_pe.lmp"
+include         ${common}/ff_colloid_pe.lmp
+
+# COM distance from unwrapped coordinates (xcm) — the same quantity fix spring uses
+variable        r equal sqrt((xcm(c2,x)-xcm(c1,x))^2+(xcm(c2,y)-xcm(c1,y))^2+(xcm(c2,z)-xcm(c1,z))^2)
+
+compute         tpol polymer temp
+thermo_style    custom step temp c_tpol pe ecoul v_r
+thermo          ${n_thermo}
+
+# ---- adsorption with the colloids held at r_start ----------------------------
+if "${n_pol} > 0" then &
+  "fix integ polymer nve" &
+  "fix lang polymer langevin 1.0 1.0 1.0 ${seed}" &
+  "run ${n_adsorb}" &
+  "unfix integ" &
+  "unfix lang"
+
+variable        scale_c equal ${dc}*${dc}
+fix             integ all nve
+fix             lang all langevin 1.0 1.0 1.0 ${seed} scale 1 ${scale_c}
+reset_timestep  0
+print           "# window r0 K" file windows.txt screen no
+
+variable        w loop ${n_windows}
+label           window_loop
+  variable      r0 equal ${r_start}+${direction}*(${w}-1)*${dr}
+  print         "${w} $(v_r0:%.4f) ${K_us}" append windows.txt screen no
+  fix           us c1 spring couple c2 ${K_us} 0.0 0.0 0.0 ${r0}
+  run           ${n_win_eq}
+  fix           sample all ave/time ${n_sample} 1 ${n_sample} v_r file window_${w}.dat
+  run           ${n_win_prod}
+  unfix         sample
+  unfix         us
+  next          w
+jump            SELF window_loop
+
+write_data      final.data nocoeff

@@ -1,0 +1,11 @@
+# conda env create -f environment.yml && conda activate flocmd && pip install -e .
+name: flocmd
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - lammps          # provides lmp / lmp_serial / lmp_mpi (Linux, macOS)
+  - numpy
+  - scipy
+  - matplotlib
+  - pytest

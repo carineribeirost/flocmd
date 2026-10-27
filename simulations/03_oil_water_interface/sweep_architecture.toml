@@ -1,0 +1,50 @@
+# Flocculant architecture at the oil/water interface (DPD).
+# Same chain length and number of chains; only the placement of hydrophobic stickers changes.
+# Run:      flocmd sweep simulations/03_oil_water_interface/sweep_architecture.toml -j 4 --analyze
+# Figures:  flocmd plot interface runs/interface_architecture
+
+workflow = "interface"
+preset = "quick"
+output = "runs/interface_architecture"
+
+[params]
+chain_length = 30
+polymer_start = "interface"
+
+[[cases]]
+label = "clean"
+n_chains = 0
+architecture = "homopolymer"
+
+[[cases]]
+label = "PAM"
+architecture = "homopolymer"
+hydrophobic_fraction = 0.0
+
+[[cases]]
+label = "HMPAM"
+architecture = "random"
+hydrophobic_fraction = 0.1
+
+[[cases]]
+label = "HMPAM"
+architecture = "random"
+hydrophobic_fraction = 0.2
+
+[[cases]]
+label = "HMPAM"
+architecture = "blocky"
+hydrophobic_fraction = 0.2
+
+[[cases]]
+label = "HMPAM"
+architecture = "telechelic"
+hydrophobic_fraction = 0.2
+
+[[cases]]
+label = "HMPAM"
+architecture = "diblock"
+hydrophobic_fraction = 0.2
+
+[grid]
+seed = [1]
