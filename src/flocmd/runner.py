@@ -23,9 +23,14 @@ class LammpsNotFound(RuntimeError):
 
 
 def lammps_command() -> list[str]:
-    env = os.environ.get("FLOCMD_LMP")
+    env = os.environ.get("FLOCMD_LMP", "").strip()
     if env:
-        return shlex.split(env, posix=os.name != "nt")
+        bare = env.strip('"')
+        if os.path.isfile(bare):   # a bare path to the executable, possibly with spaces (Windows)
+            return [bare]
+        # Windows (posix=False) keeps the quotes of a quoted path in its token: drop them
+        return [t[1:-1] if len(t) > 1 and t[0] == t[-1] == '"' else t
+                for t in shlex.split(env, posix=os.name != "nt")]
     for name in CANDIDATES:
         path = shutil.which(name)
         if path:

@@ -30,6 +30,7 @@ class WhamResult:
     f_windows: np.ndarray
     iterations: int
     pmf_err: np.ndarray | None = None
+    replicates: np.ndarray | None = None   # bootstrap PMFs (n_boot, bins), NaN where unsampled
 
 
 def wham(samples: list[np.ndarray], r0: np.ndarray, k: np.ndarray, kT: float = 1.0,
@@ -91,7 +92,15 @@ def bootstrap_wham(samples, r0, k, n_boot: int = 50, block: int | None = None, s
             resampled.append(np.concatenate([s[a:a + b] for a in starts])[: len(s)])
         reps.append(wham(resampled, r0, k, **kwargs).pmf)
     reps = np.array(reps)
+    base.replicates = np.where(np.isfinite(reps), reps, np.nan)
+    base.pmf_err = spread(base.replicates)
+    return base
+
+
+def spread(replicates: np.ndarray, ref: np.ndarray | None = None) -> np.ndarray:
+    """Bootstrap standard deviation per bin, after shifting every replica to zero mean on ``ref`` bins."""
     with np.errstate(invalid="ignore"), warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)   # bins never sampled in some replicas
-        base.pmf_err = np.nanstd(np.where(np.isfinite(reps), reps, np.nan), axis=0)
-    return base
+        if ref is not None:
+            replicates = replicates - np.nanmean(replicates[:, ref], axis=1, keepdims=True)
+        return np.nanstd(replicates, axis=0)

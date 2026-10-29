@@ -77,7 +77,7 @@ A jar-test analogue:
 | trains / loops / tails | Scheutjens–Fleer decomposition of each adsorbed chain |
 | floc net charge | colloid charges + charges of all chains adsorbed in the floc, per colloid; $>0$ = **charge reversal** |
 | $\tau_{agg}$, $k$ | fit of $N(t) = N_0/(1+t/\tau)$, $k = 2/(n_0\tau)$ (constant-kernel Smoluchowski) |
-| stability ratio $W$ | $k_{fast}/k$ with $k_{fast} = 16\pi D_c a$ (diffusion-limited, identical spheres) |
+| stability ratio $W$ | $k_{fast}/k$ with $k_{fast} = 16\pi D_c a$ (diffusion-limited, identical spheres), $a = (d_c + 2\sigma)/2$: the same capture distance at which a contact cluster is counted, so barrier-free aggregation gives $W = 1$ |
 
 The physical questions are: (i) where the optimal dose is and how it depends
 on charge density and salt; (ii) whether flocs form by **charge-patch**

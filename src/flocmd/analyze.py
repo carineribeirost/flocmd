@@ -75,7 +75,9 @@ def flocculation(run_dir, every: int = 1, late_fraction: float = 0.5) -> dict:
     n = cl["v_nclus"]
     # Smoluchowski fit of *contact* aggregation (direct colloid contacts). Bridged flocs,
     # whose colloids stay a few sigma apart, are captured by the floc graph instead.
-    k_fast = theory.smoluchowski_fast_rate(D=1.0 / dc, radius=0.5 * dc)  # D = kT / (dc * gamma_m)
+    # clusters.dat counts colloids as touching below a centre distance dc + gap, so the
+    # diffusion-limited reference uses that capture distance too (W = 1 without any barrier).
+    k_fast = theory.smoluchowski_fast_rate(D=1.0 / dc, radius=0.5 * (dc + gap))  # D = kT / (dc * gamma_m)
     tau = tau_err = k_obs = float("nan")
     if n[-1] < 0.9 * n0:
         early = n >= max(2.0, 0.25 * n0)  # constant-kernel kinetics only holds early on
@@ -113,6 +115,7 @@ def pmf(run_dir, discard: float = 0.1, bin_width: float = 0.05, n_boot: int = 30
     finite = np.isfinite(res.pmf)
     tail = np.flatnonzero(finite)[-max(1, finite.sum() // 20):]
     res.pmf -= res.pmf[tail].mean()
+    res.pmf_err = whamlib.spread(res.replicates, ref=tail)   # error bars with the same zero
 
     dc = float(params.get("colloid_diameter", 6.0))
     zc = float(params.get("colloid_charge", 20.0))

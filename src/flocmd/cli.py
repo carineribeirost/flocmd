@@ -92,8 +92,19 @@ def cmd_plot(args) -> None:
 
     p = Path(args.path)
     if args.workflow == "flocculation":
-        print(plotting.flocculation_dose_response(p))
-        print(plotting.flocculation_kinetics(p, args.charge_fraction, args.debye))
+        # one figure per Debye length (and kinetics per charge fraction) unless one is chosen,
+        # so runs that differ in f or salt are never averaged into the same curve
+        from .analyze import read_csv
+
+        d = read_csv(p / "summary.csv")
+        debyes = [args.debye] if args.debye is not None else plotting._groups(d, "debye")
+        fracs = [args.charge_fraction] if args.charge_fraction is not None else plotting._groups(d, "charge_fraction")
+        for deb in debyes:
+            sfx = f"_debye-{deb:g}" if len(debyes) > 1 else ""
+            print(plotting.flocculation_dose_response(p, p / f"dose_response{sfx}.png", debye=deb))
+            for f in fracs:
+                print(plotting.flocculation_kinetics(
+                    p, f, deb, p / f"kinetics{sfx}{f'_f-{f:g}' if len(fracs) > 1 else ''}.png"))
     elif args.workflow == "pmf":
         cases = []
         for d in p.glob("*/pmf.csv"):

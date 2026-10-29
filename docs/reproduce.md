@@ -91,12 +91,13 @@ To run a single configuration by hand:
 
 ```bash
 flocmd build flocculation -o runs/test --preset quick --set dose=1.5 --set charge_fraction=0.5
-cd runs/test && lmp -in ../../simulations/01_flocculation_kinetics/in.flocculation.lmp \
-      -var common ../../simulations/common -var data data.lmp -var n_run 200000
+flocmd run runs/test
 flocmd analyze runs/test
 ```
 
-(`lammps_vars.json` in the run directory lists every `-var` the workflow would pass.)
+`flocmd run` calls LAMMPS with every `-var` listed in `lammps_vars.json` in the run
+directory. To call `lmp` yourself, pass all of them: the defaults written in the `.lmp`
+inputs are not the preset values.
 
 ## 4. On a cluster (SLURM)
 

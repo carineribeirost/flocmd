@@ -131,11 +131,14 @@ def flocculation_kinetics(sweep_dir, charge_fraction: float | None = None, debye
         t = curves[0][0][:n]
         tmax = max(tmax, t[-1])
         ax.plot(t, np.mean([c[1][:n] for c in curves], axis=0), color=ramp[k], label=f"$\\Phi$ = {dose:.2g}")
-    # diffusion-limited reference: N/N0 = 1/(1 + t/tau_fast), tau_fast = 2/(k_fast n0), k_fast = 16 pi D a
+    # diffusion-limited reference: N/N0 = 1/(1 + t/tau_fast), tau_fast = 2/(k_fast n0), k_fast = 16 pi D a,
+    # with the capture radius a = (dc + gap)/2 at which clusters.dat counts colloids as touching
     meta = json.loads((sweep_dir / runs[0][1] / "system.json").read_text())
+    params = json.loads((sweep_dir / runs[0][1] / "params.json").read_text())["params"]
     dc = meta["params"]["colloid_diameter"]
+    gap = float(params.get("gap_clus", 2.0))
     n0 = meta["n_colloids"] / meta["box_length"] ** 3
-    tau_fast = 2.0 / (theory.smoluchowski_fast_rate(1.0 / dc, 0.5 * dc) * n0)
+    tau_fast = 2.0 / (theory.smoluchowski_fast_rate(1.0 / dc, 0.5 * (dc + gap)) * n0)
     tt = np.linspace(0, tmax, 200)
     ax.plot(tt, 1.0 / (1.0 + tt / tau_fast), color=INK2, lw=1.0, label="fast Smoluchowski (W = 1)")
     ax.set_xlabel(r"Time after rapid mix ($\tau$)")

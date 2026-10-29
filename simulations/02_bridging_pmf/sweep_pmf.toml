@@ -29,7 +29,8 @@ direction = 1
 label = "pe_in"
 n_chains = 1
 direction = -1
-colloid_separation = 16.0   # = r_start; with n_windows = 20 and dr = 0.5 this ends at 6.5
+colloid_separation = 16.0   # = r_start; quick preset (20 windows, dr = 0.5) ends at 6.5. For the
+                            # production preset (dr = 0.4) start at 16.5, as scripts/reproduce_figures.sh does
 
 [[cases]]
 label = "pe2_out"

@@ -14,7 +14,7 @@
 #    traj.lammpstrj full trajectory (post-processed by `flocmd analyze flocculation`)
 #
 #  Build the data file with:  flocmd build flocculation -o <dir> [--set key=value ...]
-#  or run a full sweep with:  flocmd sweep simulations/01_flocculation_kinetics/sweep_quick.toml
+#  or run a full sweep with:  flocmd sweep simulations/01_flocculation_kinetics/sweep_dose.toml
 # =============================================================================
 
 variable data      index data.lmp

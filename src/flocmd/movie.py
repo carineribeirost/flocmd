@@ -21,7 +21,7 @@ from .io import read_dump  # noqa: E402
 from .plotting import INK2, SERIES, SURFACE, style  # noqa: E402
 
 
-def flocculation_movie(run_dir, out=None, every: int = 1, fps: int = 8, dt: float = 0.01) -> Path:
+def flocculation_movie(run_dir, out=None, every: int = 1, fps: int = 8, dt: float | None = None) -> Path:
     """Colloids (grey discs) and polyelectrolyte (blue = cationic, light = neutral), 3D view."""
     style()
     run_dir = Path(run_dir)
@@ -29,6 +29,7 @@ def flocculation_movie(run_dir, out=None, every: int = 1, fps: int = 8, dt: floa
     L = frames[0].box_lengths
     params = json.loads((run_dir / "params.json").read_text())["params"]
     dc = float(params.get("colloid_diameter", 6.0))
+    dt = dt if dt is not None else float(params.get("dt", 0.01))   # the run's timestep
     fig = plt.figure(figsize=(5, 5))
     fig.subplots_adjust(0, 0, 1, 1)
     ax = fig.add_subplot(projection="3d")
@@ -55,12 +56,14 @@ def flocculation_movie(run_dir, out=None, every: int = 1, fps: int = 8, dt: floa
     return out
 
 
-def interface_movie(run_dir, out=None, every: int = 1, fps: int = 10, dt: float = 0.04) -> Path:
+def interface_movie(run_dir, out=None, every: int = 1, fps: int = 10, dt: float | None = None) -> Path:
     """x–z projection of oil (light) and flocculant beads (P blue, H orange) from movie.lammpstrj."""
     style()
     run_dir = Path(run_dir)
     frames = read_dump(run_dir / "movie.lammpstrj", every)
     L = frames[0].box_lengths
+    if dt is None:   # the run's timestep
+        dt = float(json.loads((run_dir / "params.json").read_text())["params"].get("dt", 0.04))
     fig, ax = plt.subplots(figsize=(3.2, 5.6))
 
     def draw(k):
