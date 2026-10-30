@@ -128,7 +128,8 @@ Repulsions follow $a_{ij} = 25 + 3.27\chi_{ij}$ (Groot & Madden 1998). Defaults:
 $\chi$ can be estimated from solubility parameters
 (`theory.chi_from_solubility`) or, better, from atomistic simulations
 (see `roadmap.md`). Bonds are harmonic, $E = K (r - r_0)^2$ with $K = 25$,
-$r_0 = 0.7\,r_c$, giving bond lengths of $0.76 \pm 0.1\,r_c$. Bonded beads keep
+$r_0 = 0.7\,r_c$, giving bond lengths of $0.77 \pm 0.13\,r_c$ (measured over all bonds of
+the interface runs). Bonded beads keep
 their pair forces (`special_bonds lj 1 1 1`).
 
 > **Pitfall: soft bonds and ghost atoms.** The original Groot–Warren spring

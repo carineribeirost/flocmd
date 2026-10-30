@@ -22,7 +22,8 @@ variable gamma_dpd index 4.5   # dissipative friction
 # Bonds: harmonic E = K (r - r0)^2. The original Groot–Warren spring (K = 2, r0 = 0)
 # lets bonds stretch to ~3 r_c; on a single MPI rank such a bond can silently be
 # computed through the wrong periodic image. K = 25, r0 = 0.7 keeps bonds at
-# ~0.85 +- 0.15 r_c (stable with dt = 0.04: ~16 steps per bond period).
+# 0.77 +- 0.13 r_c, as measured in the interface runs (stable with dt = 0.04: ~16 steps
+# per bond period).
 variable k_bond index 25.0
 variable r_bond index 0.7
 

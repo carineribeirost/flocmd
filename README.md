@@ -49,8 +49,8 @@ Models, parameters and the mapping to real units are in [docs/science.md](docs/s
 
 * **High charge density (f = 1): charge neutralisation.** Chains adsorb flat.
   Flocs peak where the floc charge crosses zero (Φ ≈ 1), where aggregation is
-  diffusion-limited (W ≈ 0.7). Overdosing reverses the charge (+40 e per
-  colloid at Φ = 3) and restabilises the dispersion.
+  diffusion-limited (W ≈ 0.94). Overdosing reverses the charge (+40 e per
+  colloid at Φ = 3) and restabilises the dispersion (W ≈ 10).
 * **Low charge density (f = 0.25): bridging.** Chains adsorb in loops and
   tails. Colloids never touch, yet up to 62 % of the chains bridge two or more
   colloids and the bridged flocs span almost the whole system.
@@ -60,17 +60,25 @@ Models, parameters and the mapping to real units are in [docs/science.md](docs/s
 <img src="figures/pmf.png" width="560" alt="Bridging free energy">
 
 Without polymer, the PMF matches the analytic DLVO repulsion (RMSD 0.09 k<sub>B</sub>T).
-One chain turns the 10 k<sub>B</sub>T barrier into a −3.8 ± 0.9 k<sub>B</sub>T well;
+One chain turns the 10 k<sub>B</sub>T barrier into a −3.8 ± 0.2 k<sub>B</sub>T well
+(−3.5 ± 0.1 k<sub>B</sub>T when the windows run inwards, so little hysteresis);
 two chains (overdosed) give only −2.0 ± 0.2 k<sub>B</sub>T.
 
 ### 3. Adsorbing is not the same as lowering the interfacial tension
 
 <img src="figures/interface_summary.png" alt="Flocculant architecture at the oil/water interface">
 
-Plain PAM stays in the water. Every HM-PAM architecture adsorbs, but only
-distributed stickers (random, blocky) flatten the chain on the interface and
-lower γ (about 3 %). End-anchored stickers (telechelic, diblock) leave the
-hydrophilic block dangling in the water and barely change γ.
+Plain PAM stays mostly in the water (29 % of the chains reach the interface)
+and leaves γ unchanged. Every HM-PAM architecture adsorbs, but distributed
+stickers (random, blocky) flatten the chains the most and lower γ the most
+(about 4 %). End-anchored stickers (telechelic, diblock) leave the
+hydrophilic block dangling in the water and lower γ less (2.5 % and 1.5 %).
+
+These are single short runs: regenerating the figure from the same inputs
+moved the clean-interface γ from 3.95 to 4.01 k<sub>B</sub>T/r<sub>c</sub><sup>2</sup>,
+three times its error bar, so differences in Δγ below ~0.1 are not resolved.
+The ordering of the architectures and the flattening did not change, and the
+adsorbed fractions moved by less than 0.1.
 
 ### 0. Validation
 
